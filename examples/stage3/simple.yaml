@@ -1,0 +1,4 @@
+package_name: A
+repository: examples/repos/simple.txt
+test_mode: true
+filter_substring: ""

@@ -1,0 +1,3 @@
+package_name: Z
+repository: examples/repos/simple.txt
+test_mode: true

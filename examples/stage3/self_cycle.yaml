@@ -1,0 +1,4 @@
+package_name: A
+repository: examples/repos/self_cycle.txt
+test_mode: true
+filter_substring: ""

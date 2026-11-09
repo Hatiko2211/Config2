@@ -153,28 +153,62 @@ class PypiTestCase(unittest.TestCase):
 class MainTestCase(unittest.TestCase):
     """Проверки вывода CLI."""
 
-    def run_main(self, text, payload=None):
-        """Запустить CLI с конфигурацией text; вернуть код, stdout, stderr."""
+    def run_main(self, text, packages=None):
+        """Запустить CLI с конфигурацией text; вернуть код, stdout, stderr.
+
+        packages — словарь имя пакета -> список requires_dist,
+        по которому подменяются ответы репозитория.
+        """
+        packages = packages or {}
+
+        def respond(request, timeout=None):
+            """Вернуть поддельный ответ по имени пакета из URL."""
+            name = request.full_url.rstrip("/").split("/")[-2]
+            if name not in packages:
+                raise http_error(404)
+            return fake_response({"info": {"requires_dist": packages[name]}})
+
         out, err = io.StringIO(), io.StringIO()
         with tempfile.TemporaryDirectory() as tmp:
             path = os.path.join(tmp, "c.yaml")
             with open(path, "w", encoding="utf-8") as file:
                 file.write(text)
-            with mock.patch("urllib.request.urlopen",
-                            return_value=fake_response(payload)), \
+            with mock.patch("urllib.request.urlopen", side_effect=respond), \
                     redirect_stdout(out), redirect_stderr(err):
                 code = main(["--config", path])
         return code, out.getvalue(), err.getvalue()
 
-    def test_prints_dependencies(self):
-        """Выводятся прямые зависимости пакета."""
-        text = f"package_name: requests\nrepository: {REPO}\n" \
-               "test_mode: false\n"
-        payload = {"info": {"requires_dist": REQUESTS_DIST}}
-        code, out, _ = self.run_main(text, payload)
+    def test_prints_graph(self):
+        """Выводится граф с транзитивными зависимостями, без extras."""
+        text = f"package_name: Requests\nrepository: {REPO}\n" \
+               "test_mode: false\nfilter_substring: cert\n"
+        packages = {
+            "requests": REQUESTS_DIST, "idna": [], "certifi": [],
+            "charset-normalizer": [], "urllib3": ["idna>=2"],
+        }
+        code, out, _ = self.run_main(text, packages)
+        lines = out.splitlines()
         self.assertEqual(code, 0)
-        self.assertIn("  idna <4,>=2.5", out.splitlines())
+        self.assertIn("  requests -> charset-normalizer, idna, urllib3",
+                      lines)
+        self.assertIn("  urllib3 -> idna", lines)
+        self.assertIn("исключены: certifi", out)
         self.assertNotIn("pysocks", out)
+
+    def test_transitive_not_found(self):
+        """Ошибка при загрузке транзитивной зависимости — код 2."""
+        text = f"package_name: a\nrepository: {REPO}\ntest_mode: false\n"
+        code, _, err = self.run_main(text, {"a": ["b"]})
+        self.assertEqual(code, 2)
+        self.assertIn("пакет не найден", err)
+
+    def test_test_mode(self):
+        """Тестовый репозиторий из examples: цикл обнаружен."""
+        repo = os.path.join(ROOT, "examples", "repos", "cycle.txt")
+        text = f"package_name: A\nrepository: '{repo}'\ntest_mode: true\n"
+        code, out, _ = self.run_main(text)
+        self.assertEqual(code, 0)
+        self.assertIn("  A -> B -> C -> A", out.splitlines())
 
     def test_config_error(self):
         """Ошибка конфигурации — код 1."""

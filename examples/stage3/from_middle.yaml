@@ -1,0 +1,4 @@
+package_name: C
+repository: examples/repos/large.txt
+test_mode: true
+filter_substring: ""

@@ -1,0 +1,4 @@
+package_name: flask
+repository: https://pypi.org/pypi
+test_mode: false
+filter_substring: "markup"
