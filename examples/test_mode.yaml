@@ -1,0 +1,4 @@
+package_name: A
+repository: examples/test_repo.txt
+test_mode: true
+filter_substring: E

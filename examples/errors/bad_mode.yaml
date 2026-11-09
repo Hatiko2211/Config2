@@ -1,0 +1,3 @@
+package_name: requests
+repository: https://pypi.org/pypi
+test_mode: "yes please"
