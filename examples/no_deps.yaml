@@ -1,0 +1,3 @@
+package_name: six
+repository: https://pypi.org/pypi
+test_mode: false

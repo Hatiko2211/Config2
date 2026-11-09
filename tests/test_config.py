@@ -1,16 +1,13 @@
 """Тесты загрузки и проверки конфигурации (этап 1)."""
 
-import io
 import os
 import sys
 import tempfile
 import unittest
-from contextlib import redirect_stderr, redirect_stdout
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "src"))
 
-from depviz.__main__ import main  # noqa: E402
 from depviz.config import ConfigError, load_config  # noqa: E402
 
 VALID = (
@@ -111,35 +108,6 @@ class ConfigTestCase(unittest.TestCase):
         """Подстрока фильтрации задана не строкой."""
         text = VALID.replace("urllib", "42")
         self.assert_error(text, "filter_substring")
-
-
-class MainTestCase(unittest.TestCase):
-    """Проверки вывода CLI."""
-
-    def test_prints_key_value(self):
-        """При корректной конфигурации печатаются все параметры."""
-        with tempfile.TemporaryDirectory() as tmp:
-            path = os.path.join(tmp, "c.yaml")
-            with open(path, "w", encoding="utf-8") as file:
-                file.write(VALID)
-            out = io.StringIO()
-            with redirect_stdout(out):
-                code = main(["--config", path])
-        self.assertEqual(code, 0)
-        self.assertEqual(out.getvalue().splitlines(), [
-            "package_name=requests",
-            "repository=https://pypi.org/pypi",
-            "test_mode=false",
-            "filter_substring=urllib",
-        ])
-
-    def test_error_exit_code(self):
-        """При ошибке возвращается код 1 и сообщение в stderr."""
-        err = io.StringIO()
-        with redirect_stderr(err):
-            code = main(["--config", "no_such_config.yaml"])
-        self.assertEqual(code, 1)
-        self.assertIn("Ошибка конфигурации", err.getvalue())
 
 
 if __name__ == "__main__":

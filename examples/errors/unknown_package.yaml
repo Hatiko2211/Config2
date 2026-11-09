@@ -1,0 +1,3 @@
+package_name: no-such-package-depviz-xyz
+repository: https://pypi.org/pypi
+test_mode: false

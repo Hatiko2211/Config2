@@ -9,9 +9,40 @@
 пакетов Python (pip). Готовые менеджеры пакетов и библиотеки для получения
 зависимостей не используются.
 
-Текущее состояние — **этап 1: минимальный прототип с конфигурацией**.
-Приложение читает параметры из YAML-файла, проверяет их и выводит
-в формате `ключ=значение`.
+Текущее состояние — **этап 2: сбор данных**. Приложение читает параметры
+из YAML-файла, загружает описание пакета из репозитория PyPI
+и выводит его прямые зависимости.
+
+## Получение зависимостей
+
+Для пакета запрашивается JSON-описание `<repository>/<package_name>/json`
+(JSON API PyPI, например `https://pypi.org/pypi/requests/json`) стандартным
+модулем `urllib`. Из поля `info.requires_dist` (строки `Requires-Dist`,
+PEP 508) извлекаются зависимости:
+
+- имя приводится к каноническому виду PEP 503 (`Charset_Normalizer` →
+  `charset-normalizer`);
+- сохраняется ограничение версии (`<4,>=2`) и маркер окружения
+  (`python_version < "3.10"`);
+- зависимости с маркером `extra == "..."` пропускаются — они нужны только
+  для необязательных возможностей пакета и при обычной установке
+  не загружаются;
+- повторы убираются, результат сортируется по имени.
+
+Используется последняя версия пакета в репозитории. Менеджеры пакетов
+(pip) и библиотеки для разбора зависимостей не используются.
+
+Режим тестового репозитория (`test_mode: true`) будет реализован
+на этапе 3; сейчас программа сообщает об этом и завершается с кодом 3.
+
+## Коды завершения
+
+| Код | Значение |
+|-----|----------|
+| 0 | успешно |
+| 1 | ошибка конфигурации |
+| 2 | ошибка репозитория: пакет не найден, сеть недоступна, неверный ответ |
+| 3 | режим ещё не поддерживается |
 
 ## Параметры конфигурации
 
@@ -52,8 +83,10 @@ filter_substring: ""
 ## Структура
 
 ```
-src/depviz/config.py     загрузка и проверка конфигурации
-src/depviz/__main__.py   точка входа CLI
+src/depviz/config.py        загрузка и проверка конфигурации
+src/depviz/requirements.py  разбор строк Requires-Dist (PEP 508)
+src/depviz/pypi.py          загрузка описания пакета из репозитория
+src/depviz/__main__.py      точка входа CLI
 tests/                   модульные тесты (unittest)
 examples/                пример тестового репозитория и конфигурации
 run.sh, run.bat          скрипты запуска и тестов
@@ -84,16 +117,28 @@ python -m pip install -r requirements.txt
 
 ```
 $ ./run.sh
-package_name=requests
-repository=https://pypi.org/pypi
-test_mode=false
-filter_substring=
+Прямые зависимости пакета requests (https://pypi.org/pypi):
+  certifi >=2023.5.7
+  charset-normalizer <4,>=2
+  idna <4,>=2.5
+  urllib3 <3,>=1.26
 
-$ ./run.sh --config examples/test_mode.yaml
-package_name=A
-repository=examples/test_repo.txt
-test_mode=true
-filter_substring=E
+$ ./run.sh --config examples/flask.yaml
+Прямые зависимости пакета flask (https://pypi.org/pypi):
+  blinker >=1.9.0
+  click >=8.1.3
+  importlib-metadata >=3.6.0 ; python_version < "3.10"
+  itsdangerous >=2.2.0
+  jinja2 >=3.1.2
+  markupsafe >=2.1.1
+  werkzeug >=3.1.0
+
+$ ./run.sh --config examples/no_deps.yaml
+Прямые зависимости пакета six (https://pypi.org/pypi):
+  нет прямых зависимостей
+
+$ ./run.sh --config examples/errors/unknown_package.yaml
+Ошибка репозитория: пакет не найден: https://pypi.org/pypi/no-such-package-depviz-xyz/json
 
 $ ./run.sh --config examples/errors/bad_url.yaml
 Ошибка конфигурации: repository: ожидается URL вида http(s)://..., получено 'ftp:/pypi'

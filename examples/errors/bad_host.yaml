@@ -1,0 +1,3 @@
+package_name: requests
+repository: https://no-such-host.invalid/pypi
+test_mode: false
