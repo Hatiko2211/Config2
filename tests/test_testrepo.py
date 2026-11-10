@@ -1,15 +1,11 @@
 """Тесты чтения файла тестового репозитория (этап 3)."""
 
 import os
-import sys
 import tempfile
 import unittest
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.join(ROOT, "src"))
-
-from depviz.pypi import RepositoryError  # noqa: E402
-from depviz.testrepo import load_test_repository  # noqa: E402
+from depviz.pypi import RepositoryError
+from depviz.testrepo import load_test_repository
 
 
 class LoadTestRepositoryTestCase(unittest.TestCase):

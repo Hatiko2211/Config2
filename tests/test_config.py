@@ -1,14 +1,10 @@
 """Тесты загрузки и проверки конфигурации (этап 1)."""
 
 import os
-import sys
 import tempfile
 import unittest
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.join(ROOT, "src"))
-
-from depviz.config import ConfigError, load_config  # noqa: E402
+from depviz.config import ConfigError, load_config
 
 VALID = (
     "package_name: requests\n"
@@ -21,14 +17,15 @@ VALID = (
 class ConfigTestCase(unittest.TestCase):
     """Проверки функции load_config."""
 
-    def setUp(self):
-        """Создать временный каталог для конфигураций."""
-        self.tmp = tempfile.TemporaryDirectory()
-        self.addCleanup(self.tmp.cleanup)
+    def temp_dir(self):
+        """Создать временный каталог, удаляемый после теста."""
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        return tmp.name
 
     def write(self, text, name="config.yaml"):
         """Записать текст во временный файл и вернуть путь к нему."""
-        path = os.path.join(self.tmp.name, name)
+        path = os.path.join(self.temp_dir(), name)
         with open(path, "w", encoding="utf-8") as file:
             file.write(text)
         return path
@@ -61,7 +58,7 @@ class ConfigTestCase(unittest.TestCase):
     def test_missing_file(self):
         """Отсутствующий конфигурационный файл."""
         with self.assertRaises(ConfigError):
-            load_config(os.path.join(self.tmp.name, "nope.yaml"))
+            load_config(os.path.join(self.temp_dir(), "nope.yaml"))
 
     def test_broken_yaml(self):
         """Синтаксическая ошибка YAML."""

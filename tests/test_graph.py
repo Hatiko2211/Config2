@@ -1,13 +1,8 @@
 """Тесты построения графа зависимостей (этап 3)."""
 
-import os
-import sys
 import unittest
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.join(ROOT, "src"))
-
-from depviz.graph import build_graph, find_cycles  # noqa: E402
+from depviz.graph import build_graph, find_cycles
 
 LONG_CHAIN = 5000
 

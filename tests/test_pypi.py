@@ -3,24 +3,21 @@
 import io
 import json
 import os
-import sys
 import tempfile
 import unittest
 import urllib.error
 from contextlib import redirect_stderr, redirect_stdout
 from unittest import mock
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.join(ROOT, "src"))
-
-from depviz import pypi  # noqa: E402
-from depviz.__main__ import main  # noqa: E402
-from depviz.requirements import (  # noqa: E402
+from depviz import pypi
+from depviz.__main__ import main
+from depviz.requirements import (
     is_optional,
     normalize_name,
     parse_requirement,
 )
 
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REPO = "https://pypi.org/pypi"
 REQUESTS_DIST = [
     "charset_normalizer<4,>=2",
